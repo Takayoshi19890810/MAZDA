@@ -4,6 +4,7 @@ import time
 import re
 import random
 import requests
+import unicodedata
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 
@@ -52,6 +53,13 @@ def get_last_modified_datetime(url):
     except:
         pass
     return "取得不可"
+
+def is_japanese(text):
+    return any(
+        'CJK UNIFIED' in unicodedata.name(ch, '') or
+        'HIRAGANA' in unicodedata.name(ch, '') or
+        'KATAKANA' in unicodedata.name(ch, '') for ch in text
+    )
 
 def get_google_news_with_selenium(keyword):
     options = Options()
@@ -151,7 +159,7 @@ def get_msn_news_with_selenium(keyword):
             if pub_date == "取得不可" and url:
                 pub_date = get_last_modified_datetime(url)
 
-            if title and url:
+            if title and url and is_japanese(title):  # ✅ 日本語フィルタ
                 data.append([title, pub_date, url, source or "MSN"])
         except:
             continue
@@ -164,14 +172,13 @@ def write_to_spreadsheet(articles, spreadsheet_id, source):
     gc = gspread.service_account_from_dict(credentials)
     sh = gc.open_by_key(spreadsheet_id)
 
-    sheet_name = datetime.now().strftime("%y%m%d") + f"_{source}"
+    sheet_name = source  # Google, Yahoo, MSN 固定名
     try:
         worksheet = sh.worksheet(sheet_name)
-        worksheet.clear()
+        worksheet.clear()  # 上書き
     except:
         worksheet = sh.add_worksheet(title=sheet_name, rows="1000", cols="20")
 
-    # ✅ 一括書き込みに変更（エラー回避）
     values = [["タイトル", "投稿日時", "URL", "引用元"]] + articles
     worksheet.append_rows(values)
     print(f"✅ {source}ニュースを{len(articles)}件書き込み完了")
