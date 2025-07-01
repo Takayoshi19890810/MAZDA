@@ -171,9 +171,9 @@ def write_to_spreadsheet(articles, spreadsheet_id, source):
     except:
         worksheet = sh.add_worksheet(title=sheet_name, rows="1000", cols="20")
 
-    worksheet.append_row(["タイトル", "投稿日時", "URL", "引用元"])
-    for row in articles:
-        worksheet.append_row(row)
+    # ✅ 一括書き込みに変更（エラー回避）
+    values = [["タイトル", "投稿日時", "URL", "引用元"]] + articles
+    worksheet.append_rows(values)
     print(f"✅ {source}ニュースを{len(articles)}件書き込み完了")
 
 if __name__ == "__main__":
